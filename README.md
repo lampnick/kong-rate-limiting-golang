@@ -47,7 +47,7 @@ go build -buildmode plugin  nick-rate-limiting.go
 ```.env
 cp nick-rate-limiting.so ../plugins/
 ```
-6. 重启kong
+6. 重启kong（平滑重启）
 ```
 kong prepare && kong reload
 ```
