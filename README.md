@@ -77,6 +77,25 @@ kong prepare && kong reload
 - 在konga中配置插件
 - 测试请求是否正常，规则是否生效
 
-### konga配置及siege压测效果图
+### 相关截图
+- konga配置
+
+```
+[{
+	"type": "header,query,body",
+	"key": "orderId",
+	"value": "orderId1,orderId2,orderId3"
+}, {
+	"type": "query",
+	"key": "username",
+	"value": "nick,jack,star"
+}]
+```
+
 ![image](http://www.lampnick.com/wp-content/uploads/2020/09/kong-config.png)
+
+- postman 显示header
+![image](http://www.lampnick.com/wp-content/uploads/2020/09/kong-post-header.png)
+
+- siege压测效果图
 ![image](http://www.lampnick.com/wp-content/uploads/2020/09/rate-limiting.png)
