@@ -42,9 +42,6 @@ const rateLimitType = "qps"
 //不需要限制的key
 const notLimitKey = ""
 
-//设置300毫秒的锁
-const lockDuration = time.Duration(300) * time.Millisecond
-
 //kong限流key
 var rateLimitKey = ""
 
@@ -201,6 +198,7 @@ func (conf Config) getRateLimitKey(identifier string, unix int64) (string, error
 	return rateLimitKey, nil
 }
 
+//获取限流标识符
 func (conf Config) getIdentifier(kong *pdk.PDK, limitKey string) (string, error) {
 	var identifier string
 	consumer, err := kong.Client.GetConsumer()
