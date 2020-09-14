@@ -119,7 +119,7 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "QPS must great than 0",
+		expected: "Key: 'Config.QPS' Error:Field validation for 'QPS' failed on the 'required' tag",
 	},
 	{
 		input: Config{
@@ -129,19 +129,19 @@ var configList = []TestConfig{
 			RedisHost:           redisHostEmpty,
 			RedisPort:           redisPortErr,
 			RedisAuth:           redisAuthRight,
-			RedisTimeoutSecond:  0,
+			RedisTimeoutSecond:  2,
 			RedisDB:             0,
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "redis config required",
+		expected: "Key: 'Config.RedisHost' Error:Field validation for 'RedisHost' failed on the 'required' tag",
 	},
 	{
 		input: Config{
 			QPS:                 30,
 			Log:                 true,
 			LimitResourcesJson:  jsonStr,
-			RedisHost:           redisHostErr,
+			RedisHost:           redisHostRight,
 			RedisPort:           redisPortErr,
 			RedisAuth:           redisAuthRight,
 			RedisTimeoutSecond:  0,
@@ -149,7 +149,22 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "RedisTimeoutSecond must great than 0",
+		expected: "Key: 'Config.RedisTimeoutSecond' Error:Field validation for 'RedisTimeoutSecond' failed on the 'required' tag",
+	},
+	{
+		input: Config{
+			QPS:                 30,
+			Log:                 true,
+			LimitResourcesJson:  jsonStr,
+			RedisHost:           redisHostRight,
+			RedisPort:           redisPortErr,
+			RedisAuth:           redisAuthRight,
+			RedisTimeoutSecond:  -1,
+			RedisDB:             0,
+			RedisLimitKeyPrefix: "nicktest",
+			HideClientHeader:    false,
+		},
+		expected: "Key: 'Config.RedisTimeoutSecond' Error:Field validation for 'RedisTimeoutSecond' failed on the 'gt' tag",
 	},
 	{
 		input: Config{
@@ -164,7 +179,7 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "LimitResourcesJson required",
+		expected: "Key: 'Config.LimitResourcesJson' Error:Field validation for 'LimitResourcesJson' failed on the 'required' tag",
 	},
 	{
 		input: Config{

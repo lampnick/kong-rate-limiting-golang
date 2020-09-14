@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Kong/go-pdk"
 	"github.com/go-redis/redis/v8"
+	"gopkg.in/go-playground/validator.v9"
 	"strconv"
 	"strings"
 	"time"
@@ -55,16 +56,16 @@ var limitResourceList []limitResource
 
 //kong 插件配置
 type Config struct {
-	QPS                 int    `json:"QPS" required:"true"` //请求限制的QPS值
-	Log                 bool   `json:"Log"`                 //是否记录日志
-	LimitResourcesJson  string `json:"LimitResourcesJson"`  //流控规则选项，使用json配置，然后解析
-	RedisHost           string `json:"RedisHost"`
-	RedisPort           int    `json:"RedisPort"`
-	RedisAuth           string `json:"RedisAuth"`
-	RedisTimeoutSecond  int    `json:"RedisTimeoutSecond"`
-	RedisDB             int    `json:"RedisDB"`
-	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix"` //Redis限流key前缀
-	HideClientHeader    bool   `json:"HideClientHeader"`    //隐藏response header
+	QPS                 int    `json:"QPS" validate:"required,gte=0"`          //请求限制的QPS值
+	Log                 bool   `json:"Log" validate:"omitempty"`               //是否记录日志
+	LimitResourcesJson  string `json:"LimitResourcesJson" validate:"required"` //流控规则选项，使用json配置，然后解析
+	RedisHost           string `json:"RedisHost" validate:"required"`
+	RedisPort           int    `json:"RedisPort" validate:"required,gte=0,lte=65535"`
+	RedisAuth           string `json:"RedisAuth" validate:"omitempty"`
+	RedisTimeoutSecond  int    `json:"RedisTimeoutSecond" validate:"required,gt=0"`
+	RedisDB             int    `json:"RedisDB" validate:"omitempty,gte=0"`
+	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix" validate:"omitempty"` //Redis限流key前缀
+	HideClientHeader    bool   `json:"HideClientHeader" validate:"omitempty"`    //隐藏response header
 }
 
 //限流资源
@@ -123,21 +124,12 @@ func (conf Config) Access(kong *pdk.PDK) {
 
 //进入此插件，说明kong中已经启用插件
 func (conf Config) checkConfig() error {
-	//后面可以改用validator
-	//QPS配置小于等于0，则配置错误
-	if conf.QPS <= 0 {
-		return errors.New("QPS must great than 0")
+	validate := validator.New()
+	err := validate.Struct(conf)
+	if err != nil {
+		return err
 	}
-
-	//如果配置了redis，则获取贾维斯配置
-	if conf.RedisHost == "" {
-		return errors.New("redis config required")
-	}
-	//流控规则选项必须
-	if conf.LimitResourcesJson == "" {
-		return errors.New("LimitResourcesJson required")
-	}
-	err := json.Unmarshal([]byte(conf.LimitResourcesJson), &limitResourceList)
+	err = json.Unmarshal([]byte(conf.LimitResourcesJson), &limitResourceList)
 	//json格式错误
 	if err != nil {
 		return errors.New(fmt.Sprintf("LimitResourcesJson with incorrect json format,%s", err.Error()))
