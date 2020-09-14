@@ -247,6 +247,7 @@ func (conf Config) checkNeedRateLimit(kong *pdk.PDK) (limitKey string) {
 		}
 
 		for _, limitType := range typeList {
+			limitType = strings.ToLower(limitType)
 			switch limitType {
 			case "header":
 				find, err := kong.Request.GetHeader(limitResource.Key)
