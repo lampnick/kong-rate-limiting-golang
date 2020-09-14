@@ -112,8 +112,8 @@ func (conf Config) Access(kong *pdk.PDK) {
 	}
 	//如果设置不隐藏header,则输出到header
 	if !conf.HideClientHeader {
-		_ = kong.Response.SetHeader("nick-rate-limiting-limit", strconv.Itoa(conf.QPS))
-		_ = kong.Response.SetHeader("nick-rate-limiting-remaining", strconv.Itoa(remaining))
+		_ = kong.Response.SetHeader("X-Rate-Limiting-Limit-QPS", strconv.Itoa(conf.QPS))
+		_ = kong.Response.SetHeader("X-Rate-Limiting-Remaining", strconv.Itoa(remaining))
 	}
 	if stop {
 		kong.Response.Exit(429, "API rate limit exceeded", nil)
