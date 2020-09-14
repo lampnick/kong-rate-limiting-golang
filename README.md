@@ -51,6 +51,31 @@ cp nick-rate-limiting.so ../plugins/
 ```
 kong prepare && kong reload
 ```
+#### 部署
+- kong配置文件修改
+```
+plugins = bundled,nick-rate-limiting
+go_plugins_dir = /etc/kong/plugins
+go_pluginserver_exe = /usr/local/bin/go-pluginserver
+```
+- 构建go-pluginserver
+```
+在go-pluginserver中执行go build github.com/Kong/go-pluginserver
+会生成 go-pluginserver文件，复制到/usr/local/bin目录
+```
+-  编译go插件
+```
+go build -buildmode plugin  custom-rate-limiting.go && cp custom-rate-limiting.so
+```
+- 将生成的.so文件放到go_plugins_dir定义的目录中
+```.env
+cp custom-rate-limiting.so ../plugins/
+```
+- 重启kong
+```
+kong prepare && kong reload
+- 在konga中配置插件
+- 测试请求是否正常，规则是否生效
 
 ### 效果图
 ![image](http://www.lampnick.com/wp-content/uploads/2020/09/rate-limiting.png)
