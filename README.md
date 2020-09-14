@@ -77,5 +77,6 @@ kong prepare && kong reload
 - 在konga中配置插件
 - 测试请求是否正常，规则是否生效
 
-### 效果图
+### konga配置及siege压测效果图
+![image](http://www.lampnick.com/wp-content/uploads/2020/09/kong-config.png)
 ![image](http://www.lampnick.com/wp-content/uploads/2020/09/rate-limiting.png)
