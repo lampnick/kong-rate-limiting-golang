@@ -51,3 +51,6 @@ cp nick-rate-limiting.so ../plugins/
 ```
 kong prepare && kong reload
 ```
+
+### 效果图
+![image](http://www.lampnick.com/wp-content/uploads/2020/09/rate-limiting.png)
