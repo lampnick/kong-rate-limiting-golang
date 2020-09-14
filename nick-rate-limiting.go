@@ -35,16 +35,13 @@ json格式
 }]
 */
 //kong限流前缀
-const rateLimitPrefix = "kong:customratelimit"
+const rateLimitPrefix = "kong:customratelimit:"
 
 //限流类型
 const rateLimitType = "qps"
 
 //不需要限制的key
 const notLimitKey = ""
-
-//kong限流key
-var rateLimitKey = ""
 
 var ctx = context.Background()
 
@@ -147,10 +144,7 @@ func (conf Config) checkConfig() error {
 func (conf Config) getRemainingAndIncr(kong *pdk.PDK, identifier string, unix int64) (remaining int, stop bool, err error) {
 	stop = false
 	remaining = 0
-	limitKey, err := conf.getRateLimitKey(identifier, unix)
-	if err != nil {
-		return remaining, stop, err
-	}
+	limitKey := conf.getRateLimitKey(identifier, unix)
 	if conf.Log {
 		_ = kong.Log.Err("[rateLimitKey] ", limitKey)
 	}
@@ -185,12 +179,8 @@ func (conf Config) getRemainingAndIncr(kong *pdk.PDK, identifier string, unix in
 }
 
 //获取限流key
-func (conf Config) getRateLimitKey(identifier string, unix int64) (string, error) {
-	if rateLimitKey != "" {
-		return rateLimitKey, nil
-	}
-	rateLimitKey = conf.getPrefix() + identifier + ":" + rateLimitType + ":" + strconv.FormatInt(unix, 10)
-	return rateLimitKey, nil
+func (conf Config) getRateLimitKey(identifier string, unix int64) string {
+	return conf.getPrefix() + identifier + ":" + rateLimitType + ":" + strconv.FormatInt(unix, 10)
 }
 
 //获取限流标识符

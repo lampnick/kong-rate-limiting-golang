@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"github.com/Kong/go-pdk"
 	"github.com/go-redis/redis/v8"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -86,8 +89,12 @@ const redisHostEmpty = ""
 const redisPortErr = 16379
 
 type TestConfig struct {
-	input    Config
-	expected string
+	input                Config
+	identifier           string
+	unix                 int64
+	confExpected         string
+	prefixExpected       string
+	rateLimitKeyExpected string
 }
 
 var configList = []TestConfig{
@@ -104,7 +111,11 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "",
+		confExpected:         "",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -116,10 +127,14 @@ var configList = []TestConfig{
 			RedisAuth:           redisAuthRight,
 			RedisTimeoutSecond:  2,
 			RedisDB:             0,
-			RedisLimitKeyPrefix: "nicktest",
+			RedisLimitKeyPrefix: "",
 			HideClientHeader:    false,
 		},
-		expected: "Key: 'Config.QPS' Error:Field validation for 'QPS' failed on the 'required' tag",
+		confExpected:         "Key: 'Config.QPS' Error:Field validation for 'QPS' failed on the 'required' tag",
+		prefixExpected:       "kong:customratelimit",
+		identifier:           "",
+		unix:                 0,
+		rateLimitKeyExpected: "kong:customratelimit::qps:0",
 	},
 	{
 		input: Config{
@@ -131,10 +146,14 @@ var configList = []TestConfig{
 			RedisAuth:           redisAuthRight,
 			RedisTimeoutSecond:  2,
 			RedisDB:             0,
-			RedisLimitKeyPrefix: "nicktest",
+			RedisLimitKeyPrefix: "nicktest:",
 			HideClientHeader:    false,
 		},
-		expected: "Key: 'Config.RedisHost' Error:Field validation for 'RedisHost' failed on the 'required' tag",
+		confExpected:         "Key: 'Config.RedisHost' Error:Field validation for 'RedisHost' failed on the 'required' tag",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "111",
+		unix:                 1111,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:111:qps:1111",
 	},
 	{
 		input: Config{
@@ -146,10 +165,14 @@ var configList = []TestConfig{
 			RedisAuth:           redisAuthRight,
 			RedisTimeoutSecond:  0,
 			RedisDB:             0,
-			RedisLimitKeyPrefix: "nicktest",
+			RedisLimitKeyPrefix: "test",
 			HideClientHeader:    false,
 		},
-		expected: "Key: 'Config.RedisTimeoutSecond' Error:Field validation for 'RedisTimeoutSecond' failed on the 'required' tag",
+		confExpected:         "Key: 'Config.RedisTimeoutSecond' Error:Field validation for 'RedisTimeoutSecond' failed on the 'required' tag",
+		prefixExpected:       "test:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "test:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -164,7 +187,11 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "Key: 'Config.RedisTimeoutSecond' Error:Field validation for 'RedisTimeoutSecond' failed on the 'gt' tag",
+		confExpected:         "Key: 'Config.RedisTimeoutSecond' Error:Field validation for 'RedisTimeoutSecond' failed on the 'gt' tag",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -179,7 +206,11 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "Key: 'Config.LimitResourcesJson' Error:Field validation for 'LimitResourcesJson' failed on the 'required' tag",
+		confExpected:         "Key: 'Config.LimitResourcesJson' Error:Field validation for 'LimitResourcesJson' failed on the 'required' tag",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -194,7 +225,11 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "LimitResourcesJson with incorrect json format,invalid character 't' looking for beginning of object key string",
+		confExpected:         "LimitResourcesJson with incorrect json format,invalid character 't' looking for beginning of object key string",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -209,7 +244,11 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "LimitResourcesJson with empty value",
+		confExpected:         "LimitResourcesJson with empty value",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -224,7 +263,11 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "LimitResourcesJson with empty value",
+		confExpected:         "LimitResourcesJson with empty value",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 	{
 		input: Config{
@@ -239,19 +282,132 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		expected: "LimitResourcesJson with empty value",
+		confExpected:         "LimitResourcesJson with empty value",
+		prefixExpected:       "nicktest:kong:customratelimit",
+		identifier:           "username-nick",
+		unix:                 1600067356,
+		rateLimitKeyExpected: "nicktest:kong:customratelimit:username-nick:qps:1600067356",
 	},
 }
 
 func TestCheckConfig(t *testing.T) {
 	for _, conf := range configList {
 		actual := conf.input.checkConfig()
-		if actual != nil && actual.Error() != conf.expected {
-			t.Errorf("checkConfig return: [%s], expected: [%s]", actual.Error(), conf.expected)
+		if actual != nil && actual.Error() != conf.confExpected {
+			t.Errorf("checkConfig return: [%s], confExpected: [%s]", actual.Error(), conf.confExpected)
 		}
 	}
 }
 
+func TestGetPrefix(t *testing.T) {
+	for _, conf := range configList {
+		actual := conf.input.getPrefix()
+		if actual != conf.prefixExpected {
+			t.Errorf("getPrefix return: [%s], prefixExpected: [%s]", actual, conf.prefixExpected)
+		}
+	}
+}
+
+func TestGetRateLimitKey(t *testing.T) {
+	for _, conf := range configList {
+		actual := conf.input.getRateLimitKey(conf.identifier, conf.unix)
+		if actual != conf.rateLimitKeyExpected {
+			t.Errorf("getRateLimitKey return: [%s], rateLimitKeyExpected: [%s]", actual, conf.rateLimitKeyExpected)
+		}
+	}
+}
+
+func getDefaultConf() *Config {
+	return &Config{
+		QPS:                 30,
+		Log:                 false,
+		LimitResourcesJson:  jsonStr,
+		RedisHost:           redisHostRight,
+		RedisPort:           redisPortRight,
+		RedisAuth:           redisAuthRight,
+		RedisTimeoutSecond:  2,
+		RedisDB:             0,
+		RedisLimitKeyPrefix: "nicktest",
+		HideClientHeader:    false,
+	}
+}
+func TestGetRemainingAndIncr(t *testing.T) {
+	kong := &pdk.PDK{}
+	conf := getDefaultConf()
+	conf.initRedisClient()
+	remaining, stop, _ := conf.getRemainingAndIncr(kong, "username-nick", 1600067356)
+	if remaining != 30 && stop != false {
+		t.Errorf("getRemainingAndIncr return: [%v %v], rateLimitKeyExpected: [%v %v]", remaining, stop, 30, false)
+	}
+}
+
+func TestGetRemainingAndIncrConcurrent(t *testing.T) {
+	kong := &pdk.PDK{}
+	conf := getDefaultConf()
+	conf.initRedisClient()
+	var wg sync.WaitGroup
+	for i := 0; i <= 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			remaining, stop, _ := conf.getRemainingAndIncr(kong, "username-nick", 1600067356)
+			fmt.Println(remaining, stop)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+}
+
+func TestInSlice(t *testing.T) {
+	list := []struct {
+		search   string
+		slice    []string
+		expected bool
+	}{
+		{
+			search: "test1",
+			slice: []string{
+				"test1",
+				"test2",
+				"name=test2",
+			},
+			expected: true,
+		},
+		{
+			search: "name=test2",
+			slice: []string{
+				"test1",
+				"test2",
+				"name=test2",
+			},
+			expected: true,
+		},
+		{
+			search: "jack",
+			slice: []string{
+				"test1",
+				"test2",
+				"name=test2",
+			},
+			expected: false,
+		},
+		{
+			search: "",
+			slice: []string{
+				"",
+				"test1",
+				"test2",
+				"name=test2",
+			},
+			expected: true,
+		},
+	}
+	for _, val := range list {
+		actual := inSlice(val.search, val.slice)
+		if actual != val.expected {
+			t.Errorf("inSlice return: [%v], expected: [%v]", actual, val.expected)
+		}
+	}
+}
 func TestRedisEval(t *testing.T) {
 	options := &redis.Options{
 		Addr:        redisHostRight + ":" + strconv.Itoa(redisPortRight),
@@ -278,7 +434,7 @@ func TestRedisEval(t *testing.T) {
 	expected = 0
 	i := result.(int64)
 	if i != expected {
-		t.Errorf("get redis eval result err,actual:%d, expected:%d", i, expected)
+		t.Errorf("get redis eval result err,actual:%d, confExpected:%d", i, expected)
 	}
 	result, err = redisClient.Eval(ctx, luaScript, []string{limitKey}, 1, 1).Result()
 	if err != nil {
@@ -287,6 +443,6 @@ func TestRedisEval(t *testing.T) {
 	expected = 1
 	i = result.(int64)
 	if i != expected {
-		t.Errorf("get redis eval result err,actual:%d, expected:%d", i, expected)
+		t.Errorf("get redis eval result err,actual:%d, confExpected:%d", i, expected)
 	}
 }
