@@ -1,7 +1,3 @@
-/*
-A "hello world" plugin in Go,
-which reads a request header and sets a response header.
-*/
 package main
 
 import (
@@ -16,10 +12,14 @@ import (
 	"time"
 )
 
-//build
-//go build -buildmode plugin  custom-rate-limiting.go && cp -f custom-rate-limiting.so ../plugins/ && kong prepare && kong reload
-//不停止kong更新插件
+//1.build
+//go build -buildmode plugin  custom-rate-limiting.go
+//2.将生成的.so文件放到go_plugins_dir定义的目录中
+//cp -f nick-rate-limiting.so dir_to/plugins/
+//3.不停止kong更新插件
 //kong prepare && kong reload
+//开发环境调试一句话命令
+//go build -buildmode plugin  custom-rate-limiting.go && cp -f custom-rate-limiting.so ../plugins/ && kong prepare && kong reload
 
 /*
 json格式
@@ -50,6 +50,10 @@ var ctx = context.Background()
 //redis客户端
 var redisClient *redis.Client
 
+//限流资源列表
+var limitResourceList []limitResource
+
+//kong 插件配置
 type Config struct {
 	QPS                 int    `json:"QPS" required:"true"` //请求限制的QPS值
 	Log                 bool   `json:"Log"`                 //是否记录日志
@@ -59,10 +63,11 @@ type Config struct {
 	RedisAuth           string `json:"RedisAuth"`
 	RedisTimeoutSecond  int    `json:"RedisTimeoutSecond"`
 	RedisDB             int    `json:"RedisDB"`
-	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix"`
-	HideClientHeader    bool   `json:"HideClientHeader"` //隐藏response header
+	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix"` //Redis限流key前缀
+	HideClientHeader    bool   `json:"HideClientHeader"`    //隐藏response header
 }
 
+//限流资源
 type limitResource struct {
 	Type  string `json:"type"`  //限流类型，使用英文逗号分隔,如：header,query,body
 	Key   string `json:"key"`   //限流key
@@ -73,9 +78,7 @@ func New() interface{} {
 	return &Config{}
 }
 
-//var ctx = context.Background()
-var limitResourceList []limitResource
-
+// kong Access phase
 func (conf Config) Access(kong *pdk.PDK) {
 	unix := time.Now().Unix()
 	defer func(kong *pdk.PDK) {
