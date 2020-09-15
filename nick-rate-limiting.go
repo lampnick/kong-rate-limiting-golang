@@ -57,7 +57,7 @@ type Config struct {
 	Log                 bool   `json:"Log" validate:"omitempty"`               //是否记录日志
 	LimitResourcesJson  string `json:"LimitResourcesJson" validate:"required"` //流控规则选项，使用json配置，然后解析
 	RedisHost           string `json:"RedisHost" validate:"required"`
-	RedisPort           int    `json:"RedisPort" validate:"required,gte=0,lte=65535"`
+	RedisPort           int    `json:"RedisPort" validate:"required,gte=1,lte=65535"`
 	RedisAuth           string `json:"RedisAuth" validate:"omitempty"`
 	RedisTimeoutSecond  int    `json:"RedisTimeoutSecond" validate:"required,gt=0"`
 	RedisDB             int    `json:"RedisDB" validate:"omitempty,gte=0"`
