@@ -1,15 +1,15 @@
 # kong-rate-limiting-golang
 
-#### 特性
+### 特性
 - 使用golang编写的一个kong限流插件
 - 限流支持并发
 - 精准限流
 - 限流配置支持and与or的匹配规则进行限流
 
-#### 环境要求
+### 环境要求
 - kong版本在2.0以上才支持go插件
 
-#### 部署方式一：使用Docker(可直接clone仓库，执行make命令构建镜像)
+### 部署方式一：使用Docker(可直接clone仓库，执行make命令构建镜像)
 - 拉镜像
 ```
 docker pull lampnick/kong-rate-limiting-golang
@@ -30,7 +30,7 @@ docker run --rm --name kong-rate-limiting-golang \
 curl http://localhost:8001/ |grep --color nick-rate-limit
 ```
 
-#### 方式二：服务器编译部署（牛刀小试,只需简单几步即可体验本插件）
+### 部署方式二：服务器编译部署（牛刀小试,只需简单几步即可体验本插件）
 - clone本项目到/etc/kong/
 ```
 mkdir /etc/kong
@@ -83,7 +83,7 @@ kong prepare && kong reload
 - siege压测,查看限流规则是否生效(返回429状态码，是被限流的请求，图中总请求40个，配置的QPS为20个，却没有20个被限流是因为这些请求并没有在1S内被限制，跨了1S时间)
 ![image](http://www.lampnick.com/wp-content/uploads/2020/09/rate-limiting.png)
 
-#### 插件开发流程
+### 插件开发流程
 1. 定义一个结构体类型保存配置文件
 ```
 用lua写的插件通过schema来指定怎样读取和验证来自数据库和Admin API中的配置数据。由于GO是静态类型语言，都需要用配置结构体定义
