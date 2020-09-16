@@ -56,7 +56,7 @@ kong prepare && kong reload
     ![image](http://www.lampnick.com/wp-content/uploads/2020/09/kong-config.png)
 
 - 测试请求是否正常，规则是否生效（postman 显示header或者浏览器调试模式查看）
-    ![image](http://www.lampnick.com/wp-content/uploads/2020/09/kong-post-header.png)
+    ![image](http://www.lampnick.com/wp-content/uploads/2020/09/kong-post-header-show-2.png)
 
 - siege压测,查看限流规则是否生效(返回429状态码，是被限流的请求，图中总请求40个，配置的QPS为20个，却没有20个被限流是因为这些请求并没有在1S内被限制，跨了1S时间)
 ![image](http://www.lampnick.com/wp-content/uploads/2020/09/rate-limiting.png)
