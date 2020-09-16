@@ -32,7 +32,7 @@ go build -buildmode plugin nick-rate-limiting.go
 ```
 - 将生成的.so文件放到go_plugins_dir(上面配置为/etc/kong/plugins)定义的目录中
 ```.env
-cp custom-rate-limiting.so /etc/kong/plugins/
+cp nick-rate-limiting.so /etc/kong/plugins/
 ```
 - 重启kong
 ```
