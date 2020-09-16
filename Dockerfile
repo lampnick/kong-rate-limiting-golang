@@ -18,10 +18,13 @@ USER root
 
 RUN mkdir -p /etc/kong/plugins/
 
-RUN  yum -y install wget && wget https://studygolang.com/dl/golang/go1.15.1.linux-amd64.tar.gz
-RUN tar -zxvf go1.15.1.linux-amd64.tar.gz -C /usr/local && mkdir /go
+RUN  yum -y install wget gcc && \
+    wget https://studygolang.com/dl/golang/go1.15.1.linux-amd64.tar.gz && \
+    tar -zxvf go1.15.1.linux-amd64.tar.gz -C /usr/local && \
+    mkdir /go && \
+    rm go1.15.1.linux-amd64.tar.gz && \
+    yum clean all
 
-RUN yum -y install gcc automake autoconf libtool gcc-c++
 
 ENV GOROOT /usr/local/go
 ENV PATH $PATH:$HOME/bin:$GOROOT/bin:$GOPATH/bin
@@ -38,6 +41,6 @@ RUN mkdir -p /etc/kong/plugins/ && \
     cp /go/src/rate-limiting/go-pluginserver/go-pluginserver /usr/local/bin
 
 # for debug
-#RUN /usr/local/bin/go-pluginserver -version && \
-#    cd /etc/kong/plugins && \
-#    /usr/local/bin/go-pluginserver -dump-plugin-info nick-rate-limiting
+RUN /usr/local/bin/go-pluginserver -version && \
+    cd /etc/kong/plugins && \
+    /usr/local/bin/go-pluginserver -dump-plugin-info nick-rate-limiting
