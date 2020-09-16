@@ -28,7 +28,7 @@ go_pluginserver_exe = /usr/local/bin/go-pluginserver
 ```
 -  编译go插件
 ```
-go build -buildmode plugin custom-rate-limiting.go
+go build -buildmode plugin nick-rate-limiting.go
 ```
 - 将生成的.so文件放到go_plugins_dir(上面配置为/etc/kong/plugins)定义的目录中
 ```.env
