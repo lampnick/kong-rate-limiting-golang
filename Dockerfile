@@ -41,6 +41,6 @@ RUN mkdir -p /etc/kong/plugins/ && \
     cp /go/src/rate-limiting/go-pluginserver/go-pluginserver /usr/local/bin
 
 # for debug
-RUN /usr/local/bin/go-pluginserver -version && \
-    cd /etc/kong/plugins && \
-    /usr/local/bin/go-pluginserver -dump-plugin-info nick-rate-limiting
+#RUN /usr/local/bin/go-pluginserver -version && \
+#    cd /etc/kong/plugins && \
+#    /usr/local/bin/go-pluginserver -dump-plugin-info nick-rate-limiting
