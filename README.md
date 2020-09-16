@@ -4,11 +4,33 @@
 - 使用golang编写的一个kong限流插件
 - 限流支持并发
 - 精准限流
+- 限流配置支持and与or的匹配规则进行限流
 
 #### 环境要求
 - kong版本在2.0以上才支持go插件
 
-#### 部署（牛刀小试,只需简单几步即可体验本插件）
+#### 部署方式一：使用Docker(可直接clone仓库，执行make命令构建镜像)
+- 拉镜像
+```
+docker pull lampnick/kong-rate-limiting-golang
+```
+- 运行docker
+```
+docker run --rm --name kong-rate-limiting-golang \
+    -e "KONG_LOG_LEVEL=info" \
+    -e "KONG_NGINX_USER=root root" \
+    -p 8000:8000 \
+    -p 8443:8443 \
+    -p 8001:8001 \
+    -p 8444:8444 \
+    kong-rate-limiting-golang
+```
+- 测试插件是否加载成功
+```
+curl http://localhost:8001/ |grep --color nick-rate-limit
+```
+
+#### 方式二：服务器编译部署（牛刀小试,只需简单几步即可体验本插件）
 - clone本项目到/etc/kong/
 ```
 mkdir /etc/kong
