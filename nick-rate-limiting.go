@@ -40,8 +40,8 @@ const rateLimitPrefix = "kong:customratelimit:"
 //限流类型
 const rateLimitType = "qps"
 
-//不需要限制的key
-const notLimitKey = ""
+//匹配条件:or
+const matchConditionOr = "or"
 
 var ctx = context.Background()
 
@@ -61,8 +61,9 @@ type Config struct {
 	RedisAuth           string `json:"RedisAuth" validate:"omitempty"`
 	RedisTimeoutSecond  int    `json:"RedisTimeoutSecond" validate:"required,gt=0"`
 	RedisDB             int    `json:"RedisDB" validate:"omitempty,gte=0"`
-	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix" validate:"omitempty"` //Redis限流key前缀
-	HideClientHeader    bool   `json:"HideClientHeader" validate:"omitempty"`    //隐藏response header
+	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix" validate:"omitempty"`         //Redis限流key前缀
+	HideClientHeader    bool   `json:"HideClientHeader" validate:"omitempty"`            //隐藏response header
+	MatchCondition      string `json:"MatchCondition" validate:"omitempty,oneof=and or"` //流控规则匹配条件，and：所有规则都需要匹配到则成功，or: 匹配到一个则成功
 }
 
 //限流资源
@@ -92,8 +93,8 @@ func (conf Config) Access(kong *pdk.PDK) {
 	//初始化redis
 	conf.initRedisClient()
 	//检查当前请求是否需要限流
-	limitKey := conf.checkNeedRateLimit(kong)
-	if limitKey == notLimitKey {
+	limitKey, matched := conf.checkNeedRateLimit(kong)
+	if !matched {
 		return
 	}
 	//获取限制标识identifier
@@ -173,6 +174,9 @@ func (conf Config) getRemainingAndIncr(kong *pdk.PDK, identifier string, unix in
 		if remaining <= 0 {
 			stop = true
 			remaining = 0
+		} else {
+			//friendly show
+			remaining -= 1
 		}
 		return remaining, stop, nil
 	}
@@ -238,62 +242,85 @@ func (conf Config) initRedisClient() {
 }
 
 //检查并返回是否需要限流的key
-func (conf Config) checkNeedRateLimit(kong *pdk.PDK) (limitKey string) {
+func (conf Config) checkNeedRateLimit(kong *pdk.PDK) (limitKey string, matched bool) {
+	var matchedKey []string
 	for _, limitResource := range limitResourceList {
 		typeList := strings.Split(limitResource.Type, ",")
 		valueList := strings.Split(limitResource.Value, ",")
-		if len(typeList) == 0 {
-			continue
-		}
-
-		for _, limitType := range typeList {
-			limitType = strings.ToLower(limitType)
-			switch limitType {
-			case "header":
-				find, err := kong.Request.GetHeader(limitResource.Key)
-				//获取失败，跳过
-				if err != nil {
-					continue
-				}
-				//如果请求头中存在被限制的列表，则返回
-				if inSlice(find, valueList) {
-					return find
-				}
-			case "query":
-				find, err := kong.Request.GetQueryArg(limitResource.Key)
-				//获取失败，跳过
-				if err != nil {
-					continue
-				}
-				//如果请求头中存在被限制的列表，则返回
-				if inSlice(find, valueList) {
-					return find
-				}
-			case "body":
-				rawBody, err := kong.Request.GetRawBody()
-				//获取失败，跳过
-				if err != nil {
-					continue
-				}
-				if !strings.Contains(rawBody, limitResource.Key) {
-					continue
-				}
-				bodySlice := strings.Split(rawBody, "&")
-				for _, value := range valueList {
-					limitValue := limitResource.Key + "=" + value
-					if inSlice(limitValue, bodySlice) {
-						return value
-					}
-				}
-			case "cookie":
-				//not support
-				continue
-			default:
-				continue
+		rateLimitValue, matched := conf.matchRateLimitValue(kong, limitResource.Key, typeList, valueList)
+		//如果匹配到了是or关系，返回匹配成功(如果没有配置MatchCondition，默认会为空字符串，默认匹配条件为and)
+		if matchConditionOr == conf.MatchCondition {
+			if matched {
+				return rateLimitValue, true
+			}
+		} else {
+			//否则是and的关系，没有匹配到，返回匹配失败，否则加入到数组中
+			if !matched {
+				return "", false
+			} else {
+				matchedKey = append(matchedKey, rateLimitValue)
 			}
 		}
 	}
-	return notLimitKey
+	//如果全匹配，则转为字符串返回
+	if len(limitResourceList) == len(matchedKey) {
+		return strings.Join(matchedKey, ":"), true
+	}
+	return "", false
+}
+
+//match rate limit key
+func (conf Config) matchRateLimitValue(kong *pdk.PDK, key string, typeList, valueList []string) (limitKey string, matched bool) {
+	for _, limitType := range typeList {
+		limitType = strings.ToLower(limitType)
+		switch limitType {
+		case "header":
+			find, err := kong.Request.GetHeader(key)
+			//获取失败，跳过
+			if err != nil {
+				continue
+			}
+			//如果请求头中存在被限制的列表，则返回
+			if inSlice(find, valueList) {
+				return find, true
+			}
+		case "query":
+			find, err := kong.Request.GetQueryArg(key)
+			//获取失败，跳过
+			if err != nil {
+				continue
+			}
+			//如果请求头中存在被限制的列表，则返回
+			if inSlice(find, valueList) {
+				return find, true
+			}
+		case "body":
+			rawBody, err := kong.Request.GetRawBody()
+			//获取失败，跳过
+			if err != nil {
+				continue
+			}
+			if !strings.Contains(rawBody, key) {
+				continue
+			}
+			bodySlice := strings.Split(rawBody, "&")
+			for _, value := range valueList {
+				limitValue := key + "=" + value
+				if inSlice(limitValue, bodySlice) {
+					return value, true
+				}
+			}
+		case "cookie":
+			//not support
+			continue
+		case "ip":
+			//next iteration will support
+			continue
+		default:
+			continue
+		}
+	}
+	return "", false
 }
 
 //是否在slice中

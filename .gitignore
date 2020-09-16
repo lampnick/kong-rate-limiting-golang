@@ -19,3 +19,5 @@ deploypkg/*
 .DS_Store
 .vscode
 debug
+go-pluginserver/vendor
+go-pluginserver/keep.go
