@@ -12,18 +12,18 @@
 ### 部署方式一：使用Docker(可直接clone仓库，执行make命令构建镜像)
 - 拉镜像
 ```
-docker pull lampnick/kong-rate-limiting-golang
+docker pull lampnick/kong-rate-limiting-plugin-golang:latest
 ```
 - 运行docker
 ```
-docker run --rm --name kong-rate-limiting-golang \
+docker run --rm --name kong-rate-limiting-plugin-golang \
     -e "KONG_LOG_LEVEL=info" \
     -e "KONG_NGINX_USER=root root" \
     -p 8000:8000 \
     -p 8443:8443 \
     -p 8001:8001 \
     -p 8444:8444 \
-    kong-rate-limiting-golang
+    lampnick/kong-rate-limiting-plugin-golang:latest
 ```
 - 测试插件是否加载成功
 ```
