@@ -1,8 +1,8 @@
 .DEFAULT: help
 
-IMAGE_NAME ?= "lampnick/kong-rate-limiting-plugin-golang"
-CENTOS_IMAGE_TAG ?= "kong-2.1.3-centos-v1.1.0"
-ALPINE_IMAGE_TAG ?= "kong-2.1.3-alpine-v1.1.0"
+IMAGE_NAME ?= lampnick/kong-rate-limiting-plugin-golang
+CENTOS_IMAGE_TAG ?= kong-2.1.3-centos-v1.1.0
+ALPINE_IMAGE_TAG ?= kong-2.1.3-alpine-v1.1.0
 
 KONG_NET_NAME := $(shell docker network ls|grep kong-net|awk '{print $$2}')
 P="\\033[34m===>\\033[0m"
@@ -24,8 +24,8 @@ build-alpine:
 	@docker build -f Dockerfile.alpine -t $(IMAGE_NAME):$(ALPINE_IMAGE_TAG) .
 
 test-run-centos:
-	@docker run --rm --name $(IMAGE_NAME) \
-    -e "KONG_LOG_LEVEL=info" \
+	@docker run --rm --name kong-rate-limiting-plugin-golang \
+    -e "KONG_LOG_LEVEL=debug" \
     -e "KONG_NGINX_USER=root root" \
     -p 8000:8000 \
     -p 8443:8443 \
@@ -34,7 +34,7 @@ test-run-centos:
      $(IMAGE_NAME):$(CENTOS_IMAGE_TAG)
 
 test-run-alpine:
-	@docker run --rm --name $(IMAGE_NAME) \
+	@docker run --rm --name kong-rate-limiting-plugin-golang \
     -e "KONG_LOG_LEVEL=info" \
     -e "KONG_NGINX_USER=root root" \
     -p 8000:8000 \
