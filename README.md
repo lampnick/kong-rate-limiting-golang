@@ -7,9 +7,9 @@
 - 限流配置支持and与or的匹配规则进行限流
 
 ### 环境要求
-- kong版本在2.0以上才支持go插件
+- kong版本在2.0以上才支持go插件(但是官网文档说2.0.5版本修复了go插件间歇性被kill的问题，所以建议使用2.0.5及以上版本，更新详情请查阅：https://github.com/Kong/kong/blob/master/CHANGELOG.md#205)
 
-### 部署方式一：使用Docker(可直接clone仓库，执行make命令构建镜像)
+### 部署方式一：使用Docker(可直接clone仓库，执行make相关命令构建kong镜像）【如果clone了代码，可以在项目根目录使用make run-kong-konga-pg运行kong、postgres及konga全套环境】
 - 拉镜像
 ```
 docker pull lampnick/kong-rate-limiting-plugin-golang:latest

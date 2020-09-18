@@ -4,6 +4,8 @@ docker-compose.yml
 Dockerfile
 Dockerfile.alpine
 Dockerfile.build
+Makefile
+.dockerignore
 
 # Docs
 README.md
