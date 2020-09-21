@@ -16,7 +16,7 @@ import (
 //1.build
 //go build -buildmode plugin  custom-rate-limiting.go
 //2.将生成的.so文件放到go_plugins_dir定义的目录中
-//cp -f nick-rate-limiting.so dir_to/plugins/
+//cp -f custom-rate-limiting.so dir_to/plugins/
 //3.不停止kong更新插件
 //kong prepare && kong reload
 //开发环境调试一句话命令

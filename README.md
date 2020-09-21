@@ -27,7 +27,7 @@ docker run --rm --name kong-rate-limiting-plugin-golang \
 ```
 - 测试插件是否加载成功
 ```
-curl http://localhost:8001/ |grep --color nick-rate-limit
+curl http://localhost:8001/ |grep --color custom-rate-limiting
 ```
 
 ### 部署方式二：服务器编译部署（牛刀小试,只需简单几步即可体验本插件）
@@ -39,7 +39,7 @@ git clone https://github.com/lampnick/kong-rate-limiting-golang.git
 ```
 - 修改kong配置文件
 ```
-plugins = bundled,nick-rate-limiting
+plugins = bundled,custom-rate-limiting
 go_plugins_dir = /etc/kong/plugins
 go_pluginserver_exe = /usr/local/bin/go-pluginserver
 ```
@@ -50,11 +50,11 @@ go_pluginserver_exe = /usr/local/bin/go-pluginserver
 ```
 -  编译go插件
 ```
-go build -buildmode plugin nick-rate-limiting.go
+go build -buildmode plugin custom-rate-limiting.go
 ```
 - 将生成的.so文件放到go_plugins_dir(上面配置为/etc/kong/plugins)定义的目录中
 ```.env
-cp nick-rate-limiting.so /etc/kong/plugins/
+cp custom-rate-limiting.so /etc/kong/plugins/
 ```
 - 重启kong
 ```
@@ -119,11 +119,11 @@ Log
 ```
 4. 编译go插件
 ```
-go build -buildmode plugin  nick-rate-limiting.go
+go build -buildmode plugin  custom-rate-limiting.go
 ```
 5. 将生成的.so文件放到go_plugins_dir定义的目录中
 ```.env
-cp nick-rate-limiting.so ../plugins/
+cp custom-rate-limiting.so ../plugins/
 ```
 6. 重启kong（平滑重启）
 ```

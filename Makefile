@@ -44,7 +44,7 @@ test-run-alpine:
     $(IMAGE_NAME):$(ALPINE_IMAGE_TAG)
 
 test-plugins:
-	@curl -s http://localhost:8001/ |grep --color nick-rate-limit
+	@curl -s http://localhost:8001/ |grep --color custom-rate-limiting
 
 rm-kong-net:
 ifeq ($(KONG_NET_NAME),kong-net)
