@@ -284,6 +284,7 @@ func (conf Config) checkNeedRateLimit(kong *pdk.PDK) (limitKey string, matched b
 			}
 		}
 	}
+	//如果limitResourceList为空(没有配置Path和LimitResourcesJson)，则返回匹配成功
 	//如果全匹配，则转为字符串返回
 	if len(limitResourceList) == len(matchedKey) {
 		return strings.Join(matchedKey, ":"), true
