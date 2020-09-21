@@ -43,6 +43,9 @@ const rateLimitType = "qps"
 //匹配条件:or
 const matchConditionOr = "or"
 
+//匹配条件:and
+const matchConditionAnd = "and"
+
 var ctx = context.Background()
 
 //redis客户端
@@ -53,9 +56,10 @@ var limitResourceList []limitResource
 
 //kong 插件配置
 type Config struct {
-	QPS                 int    `json:"QPS" validate:"required,gte=0"`          //请求限制的QPS值
-	Log                 bool   `json:"Log" validate:"omitempty"`               //是否记录日志
-	LimitResourcesJson  string `json:"LimitResourcesJson" validate:"required"` //流控规则选项，使用json配置，然后解析
+	QPS                 int    `json:"QPS" validate:"required,gte=0"` //请求限制的QPS值
+	Log                 bool   `json:"Log" validate:"omitempty"`      //是否记录日志
+	Path                string `json:"Path"`                          //资源路径
+	LimitResourcesJson  string `json:"LimitResourcesJson"`            //流控规则选项，使用json配置，然后解析
 	RedisHost           string `json:"RedisHost" validate:"required"`
 	RedisPort           int    `json:"RedisPort" validate:"required,gte=1,lte=65535"`
 	RedisAuth           string `json:"RedisAuth" validate:"omitempty"`
@@ -63,7 +67,7 @@ type Config struct {
 	RedisDB             int    `json:"RedisDB" validate:"omitempty,gte=0"`
 	RedisLimitKeyPrefix string `json:"RedisLimitKeyPrefix" validate:"omitempty"`         //Redis限流key前缀
 	HideClientHeader    bool   `json:"HideClientHeader" validate:"omitempty"`            //隐藏response header
-	MatchCondition      string `json:"MatchCondition" validate:"omitempty,oneof=and or"` //流控规则匹配条件，and：所有规则都需要匹配到则成功，or: 匹配到一个则成功
+	MatchCondition      string `json:"MatchCondition" validate:"omitempty,oneof=and or"` //流控规则匹配条件，and：所有规则都需要匹配到则成功，or: 匹配到一个则成功, 为空时默认为and
 }
 
 //限流资源
@@ -79,6 +83,7 @@ func New() interface{} {
 
 // kong Access phase
 func (conf Config) Access(kong *pdk.PDK) {
+	_ = kong.Response.SetHeader("X-Rate-Limiting-Plugin-Status", "1")
 	unix := time.Now().Unix()
 	defer func(kong *pdk.PDK) {
 		if err := recover(); err != nil {
@@ -127,16 +132,33 @@ func (conf Config) checkConfig() error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal([]byte(conf.LimitResourcesJson), &limitResourceList)
-	//json格式错误
-	if err != nil {
-		return errors.New(fmt.Sprintf("LimitResourcesJson with incorrect json format,%s", err.Error()))
+	//如果MatchCondition为空，设置默认值为and
+	if conf.MatchCondition == "" {
+		conf.MatchCondition = matchConditionAnd
 	}
-	//如果有值为空，则提示错误
-	for _, item := range limitResourceList {
-		if item.Type == "" || item.Key == "" || item.Value == "" {
-			return errors.New("LimitResourcesJson with empty value")
+
+	//允许流控规则为空
+	if conf.LimitResourcesJson != "" {
+		err = json.Unmarshal([]byte(conf.LimitResourcesJson), &limitResourceList)
+		//json格式错误
+		if err != nil {
+			return errors.New(fmt.Sprintf("LimitResourcesJson with incorrect json format,%s", err.Error()))
 		}
+		//如果有值为空，则提示错误
+		for _, item := range limitResourceList {
+			if item.Type == "" || item.Key == "" || item.Value == "" {
+				return errors.New("LimitResourcesJson with empty value")
+			}
+		}
+	}
+	if conf.Path != "" {
+		//将QueryPath组装成一个limitResource类型，放入到limitResourceList统一处理
+		queryPathLimitResource := limitResource{
+			Type:  "Path",
+			Key:   "path",
+			Value: conf.Path,
+		}
+		limitResourceList = append(limitResourceList, queryPathLimitResource)
 	}
 	return nil
 }
@@ -309,6 +331,16 @@ func (conf Config) matchRateLimitValue(kong *pdk.PDK, key string, typeList, valu
 				if inSlice(limitValue, bodySlice) {
 					return value, true
 				}
+			}
+		case "path":
+			find, err := kong.Request.GetPath()
+			//获取失败，跳过
+			if err != nil {
+				continue
+			}
+			//如果在被限制的列表，则返回
+			if inSlice(find, valueList) {
+				return find, true
 			}
 		case "cookie":
 			//not support

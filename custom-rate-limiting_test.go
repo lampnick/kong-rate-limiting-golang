@@ -262,7 +262,7 @@ var configList = []TestConfig{
 			RedisLimitKeyPrefix: "nicktest",
 			HideClientHeader:    false,
 		},
-		confExpected:         "Key: 'Config.LimitResourcesJson' Error:Field validation for 'LimitResourcesJson' failed on the 'required' tag",
+		confExpected:         "",
 		prefixExpected:       "nicktest:kong:customratelimit:",
 		identifier:           "username-nick",
 		unix:                 1600067356,
