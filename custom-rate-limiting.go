@@ -48,9 +48,6 @@ const matchConditionAnd = "and"
 
 var ctx = context.Background()
 
-//redis客户端
-var redisClient *redis.Client
-
 //限流资源列表
 var limitResourceList []limitResource
 
@@ -95,8 +92,7 @@ func (conf Config) Access(kong *pdk.PDK) {
 		_ = kong.Log.Err("[checkConfig] ", err.Error())
 		return
 	}
-	//初始化redis
-	conf.initRedisClient()
+
 	//检查当前请求是否需要限流
 	limitKey, matched := conf.checkNeedRateLimit(kong)
 	if !matched {
@@ -180,6 +176,8 @@ func (conf Config) getRemainingAndIncr(kong *pdk.PDK, identifier string, unix in
 		end
 		return newVal - 1
 `
+	redisClient := conf.newRedisClient()
+	defer redisClient.Close()
 	result, err := redisClient.Eval(ctx, luaScript, []string{limitKey}, 1, 1).Result()
 	if err == redis.Nil {
 		return remaining, stop, nil
@@ -252,15 +250,15 @@ func (conf Config) getPrefix() string {
 	return prefix + rateLimitPrefix
 }
 
-//初始化redis客户端
-func (conf Config) initRedisClient() {
+//redis客户端
+func (conf Config) newRedisClient() *redis.Client {
 	options := &redis.Options{
 		Addr:        conf.RedisHost + ":" + strconv.Itoa(conf.RedisPort),
 		Password:    conf.RedisAuth,
 		DB:          conf.RedisDB,
 		DialTimeout: time.Duration(conf.RedisTimeoutSecond) * time.Second,
 	}
-	redisClient = redis.NewClient(options)
+	return redis.NewClient(options)
 }
 
 //检查并返回是否需要限流的key

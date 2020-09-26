@@ -71,13 +71,13 @@ const wrongJsonNokey = `
 `
 
 //right redis host
-const redisHostRight = "10.5.24.223"
+const redisHostRight = "localhost"
 
 //right redis port
 const redisPortRight = 6379
 
 //right redis auth
-const redisAuthRight = "123"
+const redisAuthRight = ""
 
 //err redis host
 const redisHostErr = "10.10.0.10"
@@ -453,7 +453,6 @@ func getDefaultConf() *Config {
 func TestGetRemainingAndIncr(t *testing.T) {
 	kong := &pdk.PDK{}
 	conf := getDefaultConf()
-	conf.initRedisClient()
 	remaining, stop, _ := conf.getRemainingAndIncr(kong, "username-nick", 1600067356)
 	if remaining != 30 && stop != false {
 		t.Errorf("getRemainingAndIncr return: [%v %v], rateLimitKeyExpected: [%v %v]", remaining, stop, 30, false)
@@ -463,7 +462,6 @@ func TestGetRemainingAndIncr(t *testing.T) {
 func TestGetRemainingAndIncrConcurrent(t *testing.T) {
 	kong := &pdk.PDK{}
 	conf := getDefaultConf()
-	conf.initRedisClient()
 	var wg sync.WaitGroup
 	for i := 0; i <= 100; i++ {
 		wg.Add(1)
@@ -534,7 +532,7 @@ func TestRedisEval(t *testing.T) {
 		DB:          0,
 		DialTimeout: time.Duration(2) * time.Second,
 	}
-	redisClient = redis.NewClient(options)
+	redisClient := redis.NewClient(options)
 	limitKey := "kong:customratelimit:service:0ff4659d-f65a-453f-bc68-7aa49bcf3a80:route:ca5ae44b-bd8f-4b4b-948f-9ba67e35085f:second:1599811581"
 
 	luaScript := `
