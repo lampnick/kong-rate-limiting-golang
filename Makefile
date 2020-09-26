@@ -1,8 +1,8 @@
 .DEFAULT: help
 
 IMAGE_NAME ?= lampnick/kong-rate-limiting-plugin-golang
-CENTOS_IMAGE_TAG ?= kong-2.1.3-centos-v1.1.1
-ALPINE_IMAGE_TAG ?= kong-2.1.3-alpine-v1.1.1
+CENTOS_IMAGE_TAG ?= kong-2.1.3-centos-v1.2.1
+ALPINE_IMAGE_TAG ?= kong-2.1.3-alpine-v1.2.1
 
 KONG_NET_NAME := $(shell docker network ls|grep kong-net|awk '{print $$2}')
 P="\\033[34m===>\\033[0m"
