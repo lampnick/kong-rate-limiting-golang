@@ -450,6 +450,7 @@ func getDefaultConf() *Config {
 		HideClientHeader:    false,
 	}
 }
+
 func TestGetRemainingAndIncr(t *testing.T) {
 	kong := &pdk.PDK{}
 	conf := getDefaultConf()
@@ -525,6 +526,7 @@ func TestInSlice(t *testing.T) {
 		}
 	}
 }
+
 func TestRedisEval(t *testing.T) {
 	options := &redis.Options{
 		Addr:        redisHostRight + ":" + strconv.Itoa(redisPortRight),
