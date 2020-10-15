@@ -321,6 +321,7 @@ func (conf Config) matchRateLimitValue(kong *pdk.PDK, key string, typeList, valu
 			if err != nil {
 				continue
 			}
+			//TODO if json format or other raw format, maybe use contain judge.
 			if !strings.Contains(rawBody, key) {
 				continue
 			}
