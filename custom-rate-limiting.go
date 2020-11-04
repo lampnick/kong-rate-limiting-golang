@@ -8,6 +8,7 @@ import (
 	"github.com/Kong/go-pdk"
 	"github.com/go-redis/redis/v8"
 	"gopkg.in/go-playground/validator.v9"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +47,9 @@ const matchConditionOr = "or"
 //匹配条件:and
 const matchConditionAnd = "and"
 
+//版本号
+const version = "v0.1.1"
+
 var ctx = context.Background()
 
 //限流资源列表
@@ -80,13 +84,18 @@ func New() interface{} {
 
 // kong Access phase
 func (conf Config) Access(kong *pdk.PDK) {
-	_ = kong.Response.SetHeader("X-Rate-Limiting-Plugin-Status", "1")
-	unix := time.Now().Unix()
-	defer func(kong *pdk.PDK) {
+	defer func() {
 		if err := recover(); err != nil {
-			_ = kong.Log.Err(fmt.Sprint(err))
+			log.Printf("kong plugin panic at: %v, err: %v", time.Now(), err)
+			if kong == nil {
+				log.Printf("kong fatal err ===> kong is nil at: %v", time.Now())
+			} else {
+				_ = kong.Log.Err(fmt.Sprint(err))
+			}
 		}
-	}(kong)
+	}()
+	_ = kong.Response.SetHeader("X-Rate-Limiting-Plugin-Version", version)
+	unix := time.Now().Unix()
 	//检查配置
 	if err := conf.checkConfig(); err != nil {
 		_ = kong.Log.Err("[checkConfig] ", err.Error())
@@ -321,7 +330,7 @@ func (conf Config) matchRateLimitValue(kong *pdk.PDK, key string, typeList, valu
 			if err != nil {
 				continue
 			}
-			//TODO if json format or other raw format, maybe use contain judge.
+			//TODO if json format or other raw format, maybe use contain judge or use equal after decode to key value pairs.
 			if !strings.Contains(rawBody, key) {
 				continue
 			}
